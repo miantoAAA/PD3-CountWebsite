@@ -30,9 +30,10 @@
         localStorage.setItem('COUNTkazu', COUNTkazu);
         document.getElementById('COUNTmiru').textContent = COUNTkazu;
 
-        // サーバーにアクセス回数を送信
+        // ユーザー名を取得
         const userName = prompt("あなたの名前を入力してください:");
 
+        // サーバーにアクセス回数を送信
         fetch('/api/access', {
             method: 'POST',
             headers: {
@@ -45,6 +46,25 @@
                 console.log(`${data.user} さんの利用回数は ${data.count} 回です！`);
             })
             .catch(error => console.error('エラー:', error));
+
+        // サーバーからランキングを取得して表示
+        fetch('/api/ranking')
+            .then(response => response.json())
+            .then(ranking => {
+                const rankingTitle = document.createElement('h2');
+                rankingTitle.textContent = 'アクセスランキング';
+                document.body.appendChild(rankingTitle);
+
+                const rankingList = document.createElement('ol');
+                ranking.forEach(({ user, count }) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${user}: ${count}回`;
+                    rankingList.appendChild(listItem);
+                });
+                document.body.appendChild(rankingList);
+            })
+            .catch(error => console.error('エラー:', error));
     </script>
 </body>
 </html>
+
