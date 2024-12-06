@@ -10,8 +10,8 @@
             margin-top: 50px;
         }
         canvas {
-            border: 1px solid #000;
             margin-top: 20px;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
@@ -23,8 +23,6 @@
 
     <h2>アクセスランキング</h2>
     <div id="ranking">ランキングを読み込み中...</div>
-
-    <h2>ランキングピラミッド</h2>
     <canvas id="pyramidCanvas" width="600" height="400"></canvas>
 
     <script>
@@ -63,7 +61,6 @@
                 const data = await response.json();
                 alert(`${data.user}さんの利用回数: ${data.count}回`);
                 loadRanking(); // ランキングを再読み込み
-                drawPyramid(); // ピラミッドを再描画
             } catch (error) {
                 console.error('エラー:', error);
                 alert('アクセス記録の送信に失敗しました。');
@@ -92,61 +89,45 @@
                 });
 
                 rankingDiv.appendChild(rankingList);
+
+                drawPyramid(ranking); // ピラミッドを描画
             } catch (error) {
                 console.error('エラー:', error);
                 document.getElementById('ranking').textContent = 'ランキングの取得に失敗しました。';
             }
         }
 
-        // ランキングピラミッドを描画する関数
-        async function drawPyramid() {
-            try {
-                const response = await fetch('/api/ranking');
-                const ranking = await response.json();
+        // ピラミッドを描画する関数
+        function drawPyramid(ranking) {
+            const canvas = document.getElementById('pyramidCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // キャンバスをクリア
 
-                const canvas = document.getElementById('pyramidCanvas');
-                const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const levels = ranking.length;
+            const levelHeight = height / (levels + 1);
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height); // キャンバスをクリア
+            ranking.forEach(({ user, count }, index) => {
+                const x = width / 2;
+                const y = height - (index + 1) * levelHeight;
+                const rectWidth = (width / levels) * (levels - index);
 
-                if (ranking.length === 0) {
-                    ctx.font = '20px Arial';
-                    ctx.fillText('ランキングデータがありません。', canvas.width / 2 - 100, canvas.height / 2);
-                    return;
-                }
+                // 四角形を描画
+                ctx.fillStyle = 'lightblue';
+                ctx.fillRect(x - rectWidth / 2, y - levelHeight / 2, rectWidth, levelHeight);
 
-                const totalLevels = ranking.length;
-                const levelHeight = canvas.height / (totalLevels + 1);
-
-                ranking.forEach((item, index) => {
-                    const levelWidth = (canvas.width / totalLevels) * (index + 1);
-                    const x = (canvas.width - levelWidth) / 2;
-                    const y = canvas.height - levelHeight * (index + 1);
-
-                    // ピラミッドの矩形を描画
-                    ctx.fillStyle = 'rgba(100, 149, 237, 0.8)';
-                    ctx.fillRect(x, y, levelWidth, levelHeight);
-
-                    // 名前と利用回数を描画
-                    ctx.fillStyle = '#000';
-                    ctx.font = '16px Arial';
-                    ctx.fillText(`${item.user}: ${item.count}回`, x + 10, y + levelHeight / 2);
-                });
-            } catch (error) {
-                console.error('エラー:', error);
-                const ctx = document.getElementById('pyramidCanvas').getContext('2d');
-                ctx.font = '20px Arial';
-                ctx.fillText('ランキングデータの取得に失敗しました。', 20, canvas.height / 2);
-            }
+                // テキストを描画
+                ctx.fillStyle = 'black';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${user}: ${count}回`, x, y);
+            });
         }
 
-        // ページロード時にランキングを読み込み、ピラミッドを描画
-        window.onload = () => {
-            loadRanking();
-            drawPyramid();
-        };
+        // ページロード時にランキングを読み込む
+        window.onload = loadRanking;
     </script>
 </body>
 </html>
-
 
