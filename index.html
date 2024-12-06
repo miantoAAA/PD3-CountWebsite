@@ -14,6 +14,11 @@
 <body>
     <h1>TABETEの利用回数</h1>
     <p>あなたはTABETEを <span id="COUNTmiru">0</span> 回利用しました。</p>
+    <input type="text" id="username" placeholder="あなたの名前を入力してください">
+    <button onclick="sendAccess()">送信</button>
+
+    <h2>アクセスランキング</h2>
+    <div id="ranking">ランキングを読み込み中...</div>
 
     <script>
         // LocalStorageからカウントを取得
@@ -30,30 +35,46 @@
         localStorage.setItem('COUNTkazu', COUNTkazu);
         document.getElementById('COUNTmiru').textContent = COUNTkazu;
 
-        // ユーザー名を取得
-        const userName = prompt("あなたの名前を入力してください:");
+        // サーバーにアクセス回数を送信する関数
+        async function sendAccess() {
+            const username = document.getElementById('username').value;
 
-        // サーバーにアクセス回数を送信
-        fetch('/api/access', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ user: userName }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                console.log(`${data.user} さんの利用回数は ${data.count} 回です！`);
-            })
-            .catch(error => console.error('エラー:', error));
+            if (!username) {
+                alert('名前を入力してください！');
+                return;
+            }
 
-        // サーバーからランキングを取得して表示
-        fetch('/api/ranking')
-            .then(response => response.json())
-            .then(ranking => {
-                const rankingTitle = document.createElement('h2');
-                rankingTitle.textContent = 'アクセスランキング';
-                document.body.appendChild(rankingTitle);
+            try {
+                const response = await fetch('/api/access', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ user: username }),
+                });
+
+                const data = await response.json();
+                alert(`${data.user}さんの利用回数: ${data.count}回`);
+                loadRanking(); // ランキングを再読み込み
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('アクセス記録の送信に失敗しました。');
+            }
+        }
+
+        // サーバーからランキングを取得して表示する関数
+        async function loadRanking() {
+            try {
+                const response = await fetch('/api/ranking');
+                const ranking = await response.json();
+
+                const rankingDiv = document.getElementById('ranking');
+                rankingDiv.innerHTML = ''; // ランキングをリセット
+
+                if (ranking.length === 0) {
+                    rankingDiv.textContent = 'まだランキングがありません。';
+                    return;
+                }
 
                 const rankingList = document.createElement('ol');
                 ranking.forEach(({ user, count }) => {
@@ -61,9 +82,16 @@
                     listItem.textContent = `${user}: ${count}回`;
                     rankingList.appendChild(listItem);
                 });
-                document.body.appendChild(rankingList);
-            })
-            .catch(error => console.error('エラー:', error));
+
+                rankingDiv.appendChild(rankingList);
+            } catch (error) {
+                console.error('エラー:', error);
+                document.getElementById('ranking').textContent = 'ランキングの取得に失敗しました。';
+            }
+        }
+
+        // ページロード時にランキングを読み込む
+        window.onload = loadRanking;
     </script>
 </body>
 </html>
