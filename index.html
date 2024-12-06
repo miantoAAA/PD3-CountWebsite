@@ -9,6 +9,10 @@
             text-align: center;
             margin-top: 50px;
         }
+        canvas {
+            border: 1px solid #000;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -19,6 +23,9 @@
 
     <h2>アクセスランキング</h2>
     <div id="ranking">ランキングを読み込み中...</div>
+
+    <h2>ランキングピラミッド</h2>
+    <canvas id="pyramidCanvas" width="600" height="400"></canvas>
 
     <script>
         // LocalStorageからカウントを取得
@@ -56,6 +63,7 @@
                 const data = await response.json();
                 alert(`${data.user}さんの利用回数: ${data.count}回`);
                 loadRanking(); // ランキングを再読み込み
+                drawPyramid(); // ピラミッドを再描画
             } catch (error) {
                 console.error('エラー:', error);
                 alert('アクセス記録の送信に失敗しました。');
@@ -90,9 +98,55 @@
             }
         }
 
-        // ページロード時にランキングを読み込む
-        window.onload = loadRanking;
+        // ランキングピラミッドを描画する関数
+        async function drawPyramid() {
+            try {
+                const response = await fetch('/api/ranking');
+                const ranking = await response.json();
+
+                const canvas = document.getElementById('pyramidCanvas');
+                const ctx = canvas.getContext('2d');
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // キャンバスをクリア
+
+                if (ranking.length === 0) {
+                    ctx.font = '20px Arial';
+                    ctx.fillText('ランキングデータがありません。', canvas.width / 2 - 100, canvas.height / 2);
+                    return;
+                }
+
+                const totalLevels = ranking.length;
+                const levelHeight = canvas.height / (totalLevels + 1);
+
+                ranking.forEach((item, index) => {
+                    const levelWidth = (canvas.width / totalLevels) * (index + 1);
+                    const x = (canvas.width - levelWidth) / 2;
+                    const y = canvas.height - levelHeight * (index + 1);
+
+                    // ピラミッドの矩形を描画
+                    ctx.fillStyle = 'rgba(100, 149, 237, 0.8)';
+                    ctx.fillRect(x, y, levelWidth, levelHeight);
+
+                    // 名前と利用回数を描画
+                    ctx.fillStyle = '#000';
+                    ctx.font = '16px Arial';
+                    ctx.fillText(`${item.user}: ${item.count}回`, x + 10, y + levelHeight / 2);
+                });
+            } catch (error) {
+                console.error('エラー:', error);
+                const ctx = document.getElementById('pyramidCanvas').getContext('2d');
+                ctx.font = '20px Arial';
+                ctx.fillText('ランキングデータの取得に失敗しました。', 20, canvas.height / 2);
+            }
+        }
+
+        // ページロード時にランキングを読み込み、ピラミッドを描画
+        window.onload = () => {
+            loadRanking();
+            drawPyramid();
+        };
     </script>
 </body>
 </html>
+
 
