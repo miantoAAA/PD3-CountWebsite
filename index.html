@@ -4,6 +4,55 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>名前入力とランキング</title>
+    <style>
+        /* ランキング左側 */
+        .ranking-left {
+            width: 45%;
+            float: left;
+            font-family: Arial, sans-serif;
+        }
+
+        .ranking-left ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .ranking-left li {
+            padding: 5px;
+            font-size: 18px;
+        }
+
+        /* ピラミッド右側 */
+        .ranking-right {
+            width: 45%;
+            float: right;
+            text-align: center;
+        }
+
+        /* ピラミッドのレベルのスタイル */
+        .pyramid-level {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .level {
+            margin-bottom: 10px;
+        }
+
+        .level span {
+            display: inline-block;
+            padding: 5px;
+            margin: 5px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+
+        /* レイアウト調整 */
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
 </head>
 <body>
     <h1>名前を入力してください</h1>
@@ -13,9 +62,20 @@
     </form>
 
     <h2>ランキング</h2>
-    <ul id="rankingList">
-        <!-- ランキングがここに表示される -->
-    </ul>
+    <div class="container">
+        <!-- ランキングのリスト (左側) -->
+        <div class="ranking-left">
+            <h3>ランキング (降順)</h3>
+            <ul id="rankingListLeft">
+                <!-- ランキングがここに表示されます -->
+            </ul>
+        </div>
+
+        <!-- ピラミッドの図形 (右側) -->
+        <div class="ranking-right" id="rankingListRight">
+            <!-- ピラミッド形式でランキングがここに表示されます -->
+        </div>
+    </div>
 
     <script>
         // フォームが送信された時にデータをサーバーに送信
@@ -42,12 +102,42 @@
             fetch('/api/ranking')
                 .then(response => response.json())
                 .then(data => {
-                    const rankingList = document.getElementById('rankingList');
-                    rankingList.innerHTML = ''; // 現在のリストをクリア
+                    // 左側のランキングリスト表示
+                    const rankingListLeft = document.getElementById('rankingListLeft');
+                    rankingListLeft.innerHTML = ''; // 現在のリストをクリア
+
+                    // ピラミッド右側表示
+                    const rankingListRight = document.getElementById('rankingListRight');
+                    rankingListRight.innerHTML = ''; // 右側のピラミッド部分をクリア
+
+                    let total = data.length;
+
+                    // 5%, 20%, 60%に分けて表示
+                    const levels = [
+                        { percentage: 5, count: Math.ceil(total * 0.05) },
+                        { percentage: 20, count: Math.ceil(total * 0.20) },
+                        { percentage: 60, count: Math.ceil(total * 0.60) }
+                    ];
+
+                    // ランキングリスト左側に名前と回数を降順で表示
                     data.forEach(item => {
                         const li = document.createElement('li');
                         li.textContent = `${item.name}: ${item.count}回`;
-                        rankingList.appendChild(li);
+                        rankingListLeft.appendChild(li);
+                    });
+
+                    // ピラミッド右側に分けて表示
+                    let index = 0;
+                    levels.forEach(level => {
+                        let levelData = '';
+                        for (let i = 0; i < level.count && index < data.length; i++) {
+                            levelData += `<span>${data[index].name}: ${data[index].count}回</span>`;
+                            index++;
+                        }
+                        const levelDiv = document.createElement('div');
+                        levelDiv.classList.add('pyramid-level');
+                        levelDiv.innerHTML = levelData;
+                        rankingListRight.appendChild(levelDiv);
                     });
                 });
         }
@@ -57,3 +147,4 @@
     </script>
 </body>
 </html>
+
