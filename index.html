@@ -2,132 +2,58 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>個別ページビューカウンタ</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
-        }
-        canvas {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>名前入力とランキング</title>
 </head>
 <body>
-    <h1>TABETEの利用回数</h1>
-    <p>あなたはTABETEを <span id="COUNTmiru">0</span> 回利用しました。</p>
-    <input type="text" id="username" placeholder="あなたの名前を入力してください">
-    <button onclick="sendAccess()">送信</button>
+    <h1>名前を入力してください</h1>
+    <form id="nameForm">
+        <input type="text" id="name" placeholder="名前を入力" required>
+        <button type="submit">送信</button>
+    </form>
 
-    <h2>アクセスランキング</h2>
-    <div id="ranking">ランキングを読み込み中...</div>
-    <canvas id="pyramidCanvas" width="600" height="400"></canvas>
+    <h2>ランキング</h2>
+    <ul id="rankingList">
+        <!-- ランキングがここに表示される -->
+    </ul>
 
     <script>
-        // LocalStorageからカウントを取得
-        let COUNTkazu = localStorage.getItem('COUNTkazu');
-        
-        if (COUNTkazu === null) {
-            COUNTkazu = 0;
-        } else {
-            COUNTkazu = parseInt(COUNTkazu, 10);
-        }
-        
-        // カウントを増加
-        COUNTkazu += 1;
-        localStorage.setItem('COUNTkazu', COUNTkazu);
-        document.getElementById('COUNTmiru').textContent = COUNTkazu;
+        // フォームが送信された時にデータをサーバーに送信
+        document.getElementById('nameForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const name = document.getElementById('name').value;
 
-        // サーバーにアクセス回数を送信する関数
-        async function sendAccess() {
-            const username = document.getElementById('username').value;
-
-            if (!username) {
-                alert('名前を入力してください！');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/access', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ user: username }),
-                });
-
-                const data = await response.json();
-                alert(`${data.user}さんの利用回数: ${data.count}回`);
-                loadRanking(); // ランキングを再読み込み
-            } catch (error) {
-                console.error('エラー:', error);
-                alert('アクセス記録の送信に失敗しました。');
-            }
-        }
-
-        // サーバーからランキングを取得して表示する関数
-        async function loadRanking() {
-            try {
-                const response = await fetch('/api/ranking');
-                const ranking = await response.json();
-
-                const rankingDiv = document.getElementById('ranking');
-                rankingDiv.innerHTML = ''; // ランキングをリセット
-
-                if (ranking.length === 0) {
-                    rankingDiv.textContent = 'まだランキングがありません。';
-                    return;
-                }
-
-                const rankingList = document.createElement('ol');
-                ranking.forEach(({ user, count }) => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = `${user}: ${count}回`;
-                    rankingList.appendChild(listItem);
-                });
-
-                rankingDiv.appendChild(rankingList);
-
-                drawPyramid(ranking); // ピラミッドを描画
-            } catch (error) {
-                console.error('エラー:', error);
-                document.getElementById('ranking').textContent = 'ランキングの取得に失敗しました。';
-            }
-        }
-
-        // ピラミッドを描画する関数
-        function drawPyramid(ranking) {
-            const canvas = document.getElementById('pyramidCanvas');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // キャンバスをクリア
-
-            const width = canvas.width;
-            const height = canvas.height;
-            const levels = ranking.length;
-            const levelHeight = height / (levels + 1);
-
-            ranking.forEach(({ user, count }, index) => {
-                const x = width / 2;
-                const y = height - (index + 1) * levelHeight;
-                const rectWidth = (width / levels) * (levels - index);
-
-                // 四角形を描画
-                ctx.fillStyle = 'lightblue';
-                ctx.fillRect(x - rectWidth / 2, y - levelHeight / 2, rectWidth, levelHeight);
-
-                // テキストを描画
-                ctx.fillStyle = 'black';
-                ctx.font = '16px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText(`${user}: ${count}回`, x, y);
+            fetch('/api/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+                fetchRanking(); // ランキングを再取得
             });
+        });
+
+        // サーバーからランキングデータを取得して表示
+        function fetchRanking() {
+            fetch('/api/ranking')
+                .then(response => response.json())
+                .then(data => {
+                    const rankingList = document.getElementById('rankingList');
+                    rankingList.innerHTML = ''; // 現在のリストをクリア
+                    data.forEach(item => {
+                        const li = document.createElement('li');
+                        li.textContent = `${item.name}: ${item.count}回`;
+                        rankingList.appendChild(li);
+                    });
+                });
         }
 
-        // ページロード時にランキングを読み込む
-        window.onload = loadRanking;
+        // 初期ランキングデータを表示
+        fetchRanking();
     </script>
 </body>
 </html>
-
