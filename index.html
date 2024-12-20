@@ -33,10 +33,15 @@
         .pyramid-level {
             margin-bottom: 10px;
             font-size: 16px;
+            display: inline-block;
         }
 
         .level {
             margin-bottom: 10px;
+            border: 1px solid #000;
+            padding: 10px;
+            display: inline-block;
+            margin: 5px;
         }
 
         .level span {
@@ -51,6 +56,22 @@
         .container {
             display: flex;
             justify-content: space-between;
+        }
+
+        /* リセットボタン */
+        #resetButton {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #resetButton:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -76,6 +97,9 @@
             <!-- ピラミッド形式でランキングがここに表示されます -->
         </div>
     </div>
+
+    <!-- リセットボタン -->
+    <button id="resetButton" onclick="resetRanking()">ランキングリセット</button>
 
     <script>
         // フォームが送信された時にデータをサーバーに送信
@@ -135,10 +159,20 @@
                             index++;
                         }
                         const levelDiv = document.createElement('div');
-                        levelDiv.classList.add('pyramid-level');
+                        levelDiv.classList.add('level');
                         levelDiv.innerHTML = levelData;
                         rankingListRight.appendChild(levelDiv);
                     });
+                });
+        }
+
+        // ランキングのリセット機能
+        function resetRanking() {
+            fetch('/api/reset', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    fetchRanking(); // リセット後にランキングを再取得
                 });
         }
 
@@ -147,4 +181,5 @@
     </script>
 </body>
 </html>
+
 
