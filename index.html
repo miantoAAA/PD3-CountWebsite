@@ -35,18 +35,18 @@
             font-size: 16px;
         }
 
-        /* 各レベルの□を縦に並べる */
+        /* 各レベルを□で囲む */
         .level {
             margin-bottom: 10px;
-            border: 1px solid #000;
+            border: 2px solid #000;
             padding: 10px;
-            display: block;
+            display: inline-block;
             margin: 5px;
             text-align: center;
         }
 
         .level span {
-            display: block;
+            display: inline-block;
             padding: 5px;
             margin: 5px;
             background-color: #f1f1f1;
@@ -135,28 +135,31 @@
                     const rankingListRight = document.getElementById('rankingListRight');
                     rankingListRight.innerHTML = ''; // 右側のピラミッド部分をクリア
 
+                    // 5%、20%、60%に分けて表示
                     let total = data.length;
 
-                    // 5%, 20%, 60%に分けて表示
-                    const levels = [
-                        { percentage: 5, count: Math.ceil(total * 0.05) },
-                        { percentage: 20, count: Math.ceil(total * 0.20) },
-                        { percentage: 60, count: Math.ceil(total * 0.60) }
-                    ];
+                    // データを降順で並べ替え
+                    const sortedData = data.sort((a, b) => b.count - a.count);
 
                     // ランキングリスト左側に名前と回数を降順で表示
-                    data.forEach(item => {
+                    sortedData.forEach(item => {
                         const li = document.createElement('li');
                         li.textContent = `${item.name}: ${item.count}回`;
                         rankingListLeft.appendChild(li);
                     });
 
                     // ピラミッド右側に分けて表示
+                    const levels = [
+                        { count: Math.ceil(total * 0.05) },  // 上位5%
+                        { count: Math.ceil(total * 0.20) },  // 次の20%
+                        { count: Math.ceil(total * 0.60) }   // 残り60%
+                    ];
+
                     let index = 0;
                     levels.forEach(level => {
                         let levelData = '';
-                        for (let i = 0; i < level.count && index < data.length; i++) {
-                            levelData += `<span>${data[index].name}: ${data[index].count}回</span>`;
+                        for (let i = 0; i < level.count && index < sortedData.length; i++) {
+                            levelData += `<span>${sortedData[index].name}: ${sortedData[index].count}回</span>`;
                             index++;
                         }
                         const levelDiv = document.createElement('div');
